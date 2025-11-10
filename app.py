@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 import mlflow
 from mlflow.models import infer_signature
 import mlflow.sklearn
+import dagshub
 
 import logging
 
@@ -28,13 +29,12 @@ def eval_metrics(actual, pred):
     r2 = r2_score(actual, pred)
     return rmse, mae, r2
 
-
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     np.random.seed(40)
 
-    remote_server_uri="https://dagshub.com/krishnaik06/mlflowexperiments.mlflow"
-    mlflow.set_tracking_uri(remote_server_uri)
+    # Initialize DagsHub connection
+    dagshub.init(repo_owner='Shrinathrajeshirke', repo_name='mlflow-dagshub', mlflow=True)
     
     # Read the wine-quality csv file from the URL
     csv_url = (
@@ -78,21 +78,5 @@ if __name__ == "__main__":
         mlflow.log_metric("r2", r2)
         mlflow.log_metric("mae", mae)
 
-        #predictions = lr.predict(train_x)
-        #signature = infer_signature(train_x, predictions)
-
-        ## For Remote server only(DAGShub)
-
-        tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
-
-        # Model registry does not work with file store
-        if tracking_url_type_store != "file":
-            # Register the model
-            # There are other ways to use the Model Registry, which depends on the use case,
-            # please refer to the doc for more information:
-            # https://mlflow.org/docs/latest/model-registry.html#api-workflow
-            mlflow.sklearn.log_model(
-                lr, "model", registered_model_name="ElasticnetWineModel"
-            )
-        else:
-            mlflow.sklearn.log_model(lr, "model")
+        # Log model (no Model Registry for DagsHub)
+        #mlflow.sklearn.log_model(lr, "model")
